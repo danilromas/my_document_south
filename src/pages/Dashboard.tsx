@@ -11,19 +11,17 @@ import {
 } from 'lucide-react';
 import Header from '@/components/Header';
 import NewApplicationModal from '@/components/NewApplicationModal';
-import UploadDocumentModal from '@/components/UploadDocumentModal';
 import UserProfileCard from '@/components/dashboard/UserProfileCard';
 import QuickActionsCard from '@/components/dashboard/QuickActionsCard';
 import RecentApplicationsCard from '@/components/dashboard/RecentApplicationsCard';
 import ApplicationsList from '@/components/dashboard/ApplicationsList';
-import DocumentsList from '@/components/dashboard/DocumentsList';
+import PersonalDataForm from '@/components/dashboard/PersonalDataForm';
 import ChatSection from '@/components/dashboard/ChatSection';
 import PaymentsSection from '@/components/dashboard/PaymentsSection';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
-  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Mock данные
   const userInfo = {
@@ -58,11 +56,6 @@ const Dashboard = () => {
     }
   ];
 
-  const documents = [
-    { id: 1, name: "Свидетельство о регистрации ИП.pdf", date: "2024-03-20", size: "2.3 MB" },
-    { id: 2, name: "Справка о налоговой.pdf", date: "2024-03-18", size: "1.2 MB" },
-    { id: 3, name: "Договор аренды.pdf", date: "2024-03-15", size: "890 KB" }
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -108,7 +101,6 @@ const Dashboard = () => {
               <UserProfileCard userInfo={userInfo} />
               <QuickActionsCard 
                 onNewApplication={() => setShowNewApplicationModal(true)}
-                onUploadDocument={() => setShowUploadModal(true)}
               />
             </div>
             <RecentApplicationsCard applications={applications} />
@@ -131,17 +123,11 @@ const Dashboard = () => {
 
           {/* Документы */}
           <TabsContent value="documents" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Мои документы</h2>
-              <Button 
-                onClick={() => setShowUploadModal(true)}
-                className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
-              >
-                <Upload size={16} className="mr-2" />
-                Загрузить документ
-              </Button>
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Персональные данные</h2>
+              <p className="text-gray-600">Заполните ваши персональные данные для ускорения обработки заявок</p>
             </div>
-            <DocumentsList documents={documents} />
+            <PersonalDataForm />
           </TabsContent>
 
           {/* Чат */}
@@ -167,10 +153,6 @@ const Dashboard = () => {
       <NewApplicationModal 
         open={showNewApplicationModal} 
         onOpenChange={setShowNewApplicationModal} 
-      />
-      <UploadDocumentModal 
-        open={showUploadModal} 
-        onOpenChange={setShowUploadModal} 
       />
     </div>
   );

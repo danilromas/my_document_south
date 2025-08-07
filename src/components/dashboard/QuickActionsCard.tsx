@@ -6,10 +6,9 @@ import { FileText, Upload, MessageCircle } from 'lucide-react';
 
 interface QuickActionsCardProps {
   onNewApplication: () => void;
-  onUploadDocument: () => void;
 }
 
-const QuickActionsCard = ({ onNewApplication, onUploadDocument }: QuickActionsCardProps) => {
+const QuickActionsCard = ({ onNewApplication }: QuickActionsCardProps) => {
   return (
     <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
       <CardHeader>
@@ -26,11 +25,10 @@ const QuickActionsCard = ({ onNewApplication, onUploadDocument }: QuickActionsCa
         </Button>
         <Button 
           variant="outline" 
-          onClick={onUploadDocument}
           className="w-full justify-start hover:bg-blue-50"
         >
           <Upload size={16} className="mr-2" />
-          Загрузить документ
+          Заполнить данные
         </Button>
         <Button variant="outline" className="w-full justify-start hover:bg-purple-50">
           <MessageCircle size={16} className="mr-2" />
