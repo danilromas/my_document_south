@@ -11,9 +11,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { Settings, Users, Bell, Database, Mail, Shield, Palette, Globe } from 'lucide-react';
+import { Settings, Users, Bell, Database, Mail, Shield, Palette, Globe, UserPlus } from 'lucide-react';
+import CreateEmployeeModal from './CreateEmployeeModal';
 
 const ManagerSettings = () => {
+  const [showCreateEmployeeModal, setShowCreateEmployeeModal] = useState(false);
   const [settings, setSettings] = useState({
     // Общие настройки
     companyName: 'Наша Компания',
@@ -191,7 +193,16 @@ const ManagerSettings = () => {
         <TabsContent value="team" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Добавить нового менеджера</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                Управление сотрудниками
+                <Button 
+                  onClick={() => setShowCreateEmployeeModal(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <UserPlus size={16} className="mr-2" />
+                  Создать сотрудника
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -515,6 +526,19 @@ const ManagerSettings = () => {
           Сохранить изменения
         </Button>
       </div>
+
+      {/* Модальное окно создания сотрудника */}
+      <CreateEmployeeModal 
+        open={showCreateEmployeeModal} 
+        onOpenChange={setShowCreateEmployeeModal}
+        onEmployeeCreated={() => {
+          // Можно добавить логику обновления списка сотрудников
+          toast({
+            title: "Сотрудник создан",
+            description: "Новый сотрудник добавлен в систему",
+          });
+        }}
+      />
     </div>
   );
 };

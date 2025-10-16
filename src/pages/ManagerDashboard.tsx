@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import KanbanBoard from '@/components/manager/KanbanBoard';
 import ManagerAssignmentPanel from '@/components/manager/ManagerAssignmentPanel';
@@ -6,99 +7,99 @@ import CRMAnalytics from '@/components/manager/CRMAnalytics';
 import ManagerSettings from '@/components/manager/ManagerSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, Kanban, Settings, BarChart3 } from 'lucide-react';
+import { apiClient, Request, Employee, User } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 const ManagerDashboard = () => {
-  // Mock данные для демонстрации
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      clientName: "Иван Петров",
-      clientEmail: "ivan@email.com",
-      type: "Регистрация ИП",
-      status: "new",
-      priority: "medium",
-      createdDate: "2024-06-11",
-      assignedManager: null,
-      description: "Регистрация индивидуального предпринимателя"
-    },
-    {
-      id: 2,
-      clientName: "Мария Сидорова",
-      clientEmail: "maria@email.com",
-      type: "Создание сайта",
-      status: "in-progress",
-      priority: "high",
-      createdDate: "2024-06-10",
-      assignedManager: "Алексей Иванов",
-      description: "Разработка корпоративного сайта"
-    },
-    {
-      id: 3,
-      clientName: "Дмитрий Козлов",
-      clientEmail: "dmitry@email.com",
-      type: "Настройка рекламы",
-      status: "review",
-      priority: "low",
-      createdDate: "2024-06-09",
-      assignedManager: "Елена Смирнова",
-      description: "Настройка контекстной рекламы"
-    },
-    {
-      id: 4,
-      clientName: "Анна Волкова",
-      clientEmail: "anna@email.com",
-      type: "Бухгалтерские услуги",
-      status: "completed",
-      priority: "medium",
-      createdDate: "2024-06-08",
-      assignedManager: "Алексей Иванов",
-      description: "Ведение бухгалтерского учета"
-    },
-    {
-      id: 5,
-      clientName: "Петр Николаев",
-      clientEmail: "petr@email.com",
-      type: "Регистрация ООО",
-      status: "completed",
-      priority: "high",
-      createdDate: "2024-06-11",
-      assignedManager: "Елена Смирнова",
-      description: "Регистрация общества с ограниченной ответственностью"
-    },
-    {
-      id: 6,
-      clientName: "Светлана Орлова",
-      clientEmail: "svetlana@email.com",
-      type: "Налоговая отчётность",
-      status: "in-progress",
-      priority: "medium",
-      createdDate: "2024-06-11",
-      assignedManager: "Ольга Новикова",
-      description: "Подготовка налоговой отчётности"
+  const { toast } = useToast();
+
+  // Загружаем все заявки
+  const { data: requests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery({
+    queryKey: ['all-requests'],
+    queryFn: () => apiClient.getRequests(),
+  });
+
+  // Загружаем сотрудников
+  const { data: employees, isLoading: employeesLoading, refetch: refetchEmployees } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => apiClient.getEmployees(),
+  });
+
+  // Преобразуем данные для отображения
+  const applications = requests?.map(request => ({
+    id: request.id,
+    clientName: `${request.user?.name || ''} ${request.user?.last_name || ''}`.trim() || 'Неизвестный клиент',
+    clientEmail: request.user?.email || 'email@example.com',
+    type: request.service?.name || "Неизвестная услуга",
+    status: getStatusLabel(request.status),
+    priority: "medium", // Можно добавить в API
+    createdDate: new Date(request.created_at).toLocaleDateString('ru-RU'),
+    assignedManager: request.employee ? `${request.employee.name} ${request.employee.last_name}` : null,
+    description: `Заявка на услугу: ${request.service?.name || "Неизвестная услуга"}`,
+    originalRequest: request
+  })) || [];
+
+  const managers = employees?.map(employee => ({
+    id: employee.id,
+    name: `${employee.name} ${employee.last_name}`,
+    email: employee.email,
+    specialization: employee.services?.[0]?.name || "Общие услуги",
+    activeClients: requests?.filter(req => req.employee_id === employee.id).length || 0
+  })) || [];
+
+  function getStatusLabel(status: number): string {
+    switch (status) {
+      case 0: return "new";
+      case 1: return "in-progress";
+      case 2: return "completed";
+      default: return "unknown";
     }
-  ]);
+  }
 
-  const managers = [
-    { id: 1, name: "Алексей Иванов", email: "alexey@company.com", specialization: "Регистрация бизнеса", activeClients: 12 },
-    { id: 2, name: "Елена Смирнова", email: "elena@company.com", specialization: "Веб-разработка", activeClients: 8 },
-    { id: 3, name: "Михаил Петров", email: "mikhail@company.com", specialization: "Реклама и маркетинг", activeClients: 15 },
-    { id: 4, name: "Ольга Новикова", email: "olga@company.com", specialization: "Бухгалтерия", activeClients: 6 }
-  ];
-
-  const updateApplicationStatus = (id: number, newStatus: string) => {
-    setApplications(prev => 
-      prev.map(app => 
-        app.id === id ? { ...app, status: newStatus } : app
-      )
-    );
+  const updateApplicationStatus = async (id: number, newStatus: string) => {
+    try {
+      const statusMap: { [key: string]: number } = {
+        'new': 0,
+        'in-progress': 1,
+        'completed': 2
+      };
+      
+      const statusValue = statusMap[newStatus];
+      if (statusValue !== undefined) {
+        await apiClient.updateRequestStatus(id, statusValue);
+        refetchRequests();
+        toast({
+          title: "Статус обновлен",
+          description: `Заявка №${id} переведена в статус: ${newStatus}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус заявки",
+        variant: "destructive",
+      });
+    }
   };
 
-  const assignManager = (applicationId: number, managerName: string) => {
-    setApplications(prev =>
-      prev.map(app =>
-        app.id === applicationId ? { ...app, assignedManager: managerName } : app
-      )
-    );
+  const assignManager = async (applicationId: number, managerName: string) => {
+    try {
+      const employee = employees?.find(emp => `${emp.name} ${emp.last_name}` === managerName);
+      if (employee) {
+        await apiClient.assignEmployee(applicationId, employee.id);
+        refetchRequests();
+        toast({
+          title: "Сотрудник назначен",
+          description: `Заявка №${applicationId} назначена сотруднику ${managerName}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось назначить сотрудника",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

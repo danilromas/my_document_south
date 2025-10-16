@@ -1,18 +1,25 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, User, Phone } from 'lucide-react';
+import { Menu, User, Phone, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import ApplicationModal from './ApplicationModal';
 
 const Header = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
   };
 
   return (
@@ -67,12 +74,43 @@ const Header = () => {
                 <Phone size={18} className="text-blue-600" />
                 <span className="font-medium">8 (800) 555-01-23</span>
               </div>
-              <Button asChild variant="outline" className="hidden md:inline-flex border-gray-300 hover:bg-gray-50 text-sm">
-                <Link to="/dashboard">
-                  <User size={16} className="mr-2" />
-                  Личный кабинет
-                </Link>
-              </Button>
+              
+              {isAuthenticated ? (
+                <>
+                  <div className="hidden md:flex items-center space-x-2 text-gray-700">
+                    <span className="text-sm">Привет, {user?.name}!</span>
+                  </div>
+                  <Button asChild variant="outline" className="hidden md:inline-flex border-gray-300 hover:bg-gray-50 text-sm">
+                    <Link to={user?.type === 'employee' ? '/employee' : '/dashboard'}>
+                      <User size={16} className="mr-2" />
+                      {user?.type === 'employee' ? 'Панель сотрудника' : 'Личный кабинет'}
+                    </Link>
+                  </Button>
+                  <Button 
+                    onClick={handleLogout}
+                    variant="outline"
+                    className="border-gray-300 hover:bg-gray-50 text-sm"
+                  >
+                    <LogOut size={16} className="mr-2" />
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild variant="outline" className="hidden md:inline-flex border-gray-300 hover:bg-gray-50 text-sm">
+                    <Link to="/login">
+                      <User size={16} className="mr-2" />
+                      Войти
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="hidden md:inline-flex border-gray-300 hover:bg-gray-50 text-sm">
+                    <Link to="/signup">
+                      Зарегистрироваться
+                    </Link>
+                  </Button>
+                </>
+              )}
+              
               <Button 
                 onClick={() => setIsModalOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-sm md:text-base px-3 md:px-4"

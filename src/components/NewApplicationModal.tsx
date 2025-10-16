@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,53 +12,101 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Calendar, User } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { apiClient, RequestData, Service } from "@/lib/api";
 
 interface NewApplicationModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRequestCreated?: () => void;
 }
 
-const NewApplicationModal = ({ open, onOpenChange }: NewApplicationModalProps) => {
+const NewApplicationModal = ({ open, onOpenChange, onRequestCreated }: NewApplicationModalProps) => {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    title: '',
-    type: '',
-    description: '',
-    priority: 'medium',
-    deadline: ''
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<RequestData>({
+    service_id: 0,
+    desired_at: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Новая заявка создана:', formData);
-    
-    toast({
-      title: "Заявка создана",
-      description: "Ваша заявка успешно отправлена на рассмотрение",
-    });
-    
-    onOpenChange(false);
-    setFormData({ title: '', type: '', description: '', priority: 'medium', deadline: '' });
+  // Загружаем услуги при открытии модального окна
+  useEffect(() => {
+    if (open) {
+      loadServices();
+    }
+  }, [open]);
+
+  const loadServices = async () => {
+    try {
+      const servicesData = await apiClient.getServices();
+      setServices(servicesData);
+    } catch (error) {
+      console.error('Ошибка загрузки услуг:', error);
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить список услуг",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (formData.service_id === 0) {
+      toast({
+        title: "Ошибка",
+        description: "Пожалуйста, выберите услугу",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      await apiClient.createRequest(formData);
+      
+      toast({
+        title: "Заявка создана",
+        description: "Ваша заявка успешно отправлена на рассмотрение",
+      });
+      
+      // Сбрасываем форму
+      setFormData({
+        service_id: 0,
+        desired_at: ''
+      });
+      
+      onOpenChange(false);
+      onRequestCreated?.();
+    } catch (error) {
+      toast({
+        title: "Ошибка создания заявки",
+        description: error instanceof Error ? error.message : "Произошла ошибка при создании заявки",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
 
-  const serviceTypes = [
-    'Регистрация ИП',
-    'Регистрация ООО',
-    'Создание сайта',
-    'Настройка рекламы',
-    'Ведение бухгалтерии',
-    'Юридическая консультация',
-    'Другое'
-  ];
+  const handleServiceChange = (value: string) => {
+    setFormData({
+      ...formData,
+      service_id: parseInt(value)
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -75,85 +123,35 @@ const NewApplicationModal = ({ open, onOpenChange }: NewApplicationModalProps) =
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-              <User size={16} className="text-blue-600" />
-              Название заявки *
+            <Label htmlFor="service" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+              <FileText size={16} className="text-blue-600" />
+              Услуга *
             </Label>
-            <Input
-              id="title"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              placeholder="Краткое описание заявки"
-              required
-              className="border-gray-300 focus:border-blue-500"
-            />
+            <Select value={formData.service_id?.toString()} onValueChange={handleServiceChange}>
+              <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                <SelectValue placeholder="Выберите услугу" />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map((service) => (
+                  <SelectItem key={service.id} value={service.id.toString()}>
+                    {service.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type" className="text-sm font-medium text-gray-700">
-              Тип услуги *
-            </Label>
-            <select
-              id="type"
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              required
-              className="w-full p-2 border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none"
-            >
-              <option value="">Выберите тип услуги</option>
-              {serviceTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="priority" className="text-sm font-medium text-gray-700">
-              Приоритет
-            </Label>
-            <select
-              id="priority"
-              name="priority"
-              value={formData.priority}
-              onChange={handleChange}
-              className="w-full p-2 border border-gray-300 rounded-md focus:border-blue-500 focus:outline-none"
-            >
-              <option value="low">Низкий</option>
-              <option value="medium">Средний</option>
-              <option value="high">Высокий</option>
-              <option value="urgent">Срочный</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="deadline" className="text-sm font-medium text-gray-700 flex items-center gap-2">
+            <Label htmlFor="desired_at" className="text-sm font-medium text-gray-700 flex items-center gap-2">
               <Calendar size={16} className="text-blue-600" />
               Желаемая дата завершения
             </Label>
             <Input
-              id="deadline"
-              name="deadline"
-              type="date"
-              value={formData.deadline}
+              id="desired_at"
+              name="desired_at"
+              type="datetime-local"
+              value={formData.desired_at}
               onChange={handleChange}
-              className="border-gray-300 focus:border-blue-500"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-              Подробное описание *
-            </Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              placeholder="Опишите детально что вам нужно..."
-              rows={4}
-              required
               className="border-gray-300 focus:border-blue-500"
             />
           </div>
@@ -164,14 +162,16 @@ const NewApplicationModal = ({ open, onOpenChange }: NewApplicationModalProps) =
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="border-gray-300 hover:bg-gray-50"
+              disabled={isLoading}
             >
               Отмена
             </Button>
             <Button
               type="submit"
+              disabled={isLoading}
               className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg"
             >
-              Создать заявку
+              {isLoading ? 'Создание...' : 'Создать заявку'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,55 +1,49 @@
 
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import EmployeeApplications from '@/components/employee/EmployeeApplications';
 import EmployeeNotifications from '@/components/employee/EmployeeNotifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Briefcase, Bell, BarChart3, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient, Request, Employee } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const EmployeeDashboard = () => {
   const { toast } = useToast();
-  const currentEmployee = "Алексей Иванов"; // В реальном приложении получать из контекста авторизации
+  const { user } = useAuth();
 
-  // Mock данные заявок для сотрудника
-  const [applications, setApplications] = useState([
-    {
-      id: 1,
-      clientName: "Иван Петров",
-      clientEmail: "ivan@email.com",
-      type: "Регистрация ИП",
-      status: "new",
-      priority: "medium",
-      createdDate: "2024-06-11",
-      assignedManager: "Алексей Иванов",
-      description: "Регистрация индивидуального предпринимателя",
-      deadline: "2024-06-15"
-    },
-    {
-      id: 2,
-      clientName: "Мария Сидорова", 
-      clientEmail: "maria@email.com",
-      type: "Создание сайта",
-      status: "in-progress",
-      priority: "high",
-      createdDate: "2024-06-10",
-      assignedManager: "Алексей Иванов",
-      description: "Разработка корпоративного сайта",
-      deadline: "2024-06-20"
-    },
-    {
-      id: 4,
-      clientName: "Анна Волкова",
-      clientEmail: "anna@email.com", 
-      type: "Бухгалтерские услуги",
-      status: "completed",
-      priority: "medium",
-      createdDate: "2024-06-08",
-      assignedManager: "Алексей Иванов",
-      description: "Ведение бухгалтерского учета",
-      deadline: "2024-06-12"
-    }
-  ]);
+  // Загружаем данные текущего сотрудника
+  const { data: employeeData, isLoading: employeeLoading } = useQuery({
+    queryKey: ['employee', user?.id],
+    queryFn: () => apiClient.getEmployee(user?.id || 1),
+    enabled: !!user?.id,
+  });
+
+  // Загружаем заявки, назначенные текущему сотруднику
+  const { data: requests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery({
+    queryKey: ['employee-requests', user?.id],
+    queryFn: () => apiClient.getRequests({ employee_id: user?.id }),
+    enabled: !!user?.id,
+  });
+
+  const currentEmployee = employeeData ? `${employeeData.name} ${employeeData.last_name}` : "Загрузка...";
+
+  // Преобразуем данные для отображения
+  const applications = requests?.map(request => ({
+    id: request.id,
+    clientName: `${request.user?.name || ''} ${request.user?.last_name || ''}`.trim() || 'Неизвестный клиент',
+    clientEmail: request.user?.email || 'email@example.com',
+    type: request.service?.name || "Неизвестная услуга",
+    status: getStatusLabel(request.status),
+    priority: "medium", // Можно добавить в API
+    createdDate: new Date(request.created_at).toLocaleDateString('ru-RU'),
+    assignedManager: currentEmployee,
+    description: `Заявка на услугу: ${request.service?.name || "Неизвестная услуга"}`,
+    deadline: request.desired_at ? new Date(request.desired_at).toLocaleDateString('ru-RU') : "Не указано",
+    originalRequest: request
+  })) || [];
 
   const [notifications, setNotifications] = useState([
     {
@@ -78,34 +72,57 @@ const EmployeeDashboard = () => {
     }
   ]);
 
-  // Функция для обновления статуса заявки
-  const updateApplicationStatus = (id: number, newStatus: string) => {
-    setApplications(prev => 
-      prev.map(app => 
-        app.id === id ? { ...app, status: newStatus } : app
-      )
-    );
-    
-    // Показываем уведомление об успешном обновлении
-    toast({
-      title: "Статус обновлен",
-      description: `Заявка №${id} переведена в статус: ${getStatusLabel(newStatus)}`,
-    });
+  function getStatusLabel(status: number): string {
+    switch (status) {
+      case 0: return 'new';
+      case 1: return 'in-progress';
+      case 2: return 'completed';
+      default: return status.toString();
+    }
+  }
 
-    // Добавляем уведомление в список
-    const newNotification = {
-      id: Date.now(),
-      type: "status_update",
-      title: "Статус обновлен",
-      message: `Заявка №${id} переведена в статус '${getStatusLabel(newStatus)}'`,
-      timestamp: new Date().toLocaleString('ru-RU'),
-      read: false
-    };
-    
-    setNotifications(prev => [newNotification, ...prev]);
+  // Функция для обновления статуса заявки
+  const updateApplicationStatus = async (id: number, newStatus: string) => {
+    try {
+      const statusMap: { [key: string]: number } = {
+        'new': 0,
+        'in-progress': 1,
+        'completed': 2
+      };
+      
+      const statusValue = statusMap[newStatus];
+      if (statusValue !== undefined) {
+        await apiClient.updateRequestStatus(id, statusValue);
+        refetchRequests();
+        
+        // Показываем уведомление об успешном обновлении
+        toast({
+          title: "Статус обновлен",
+          description: `Заявка №${id} переведена в статус: ${getStatusLabel(statusValue)}`,
+        });
+
+        // Добавляем уведомление в список
+        const newNotification = {
+          id: Date.now(),
+          type: "status_update",
+          title: "Статус обновлен",
+          message: `Заявка №${id} переведена в статус '${getStatusLabel(statusValue)}'`,
+          timestamp: new Date().toLocaleString('ru-RU'),
+          read: false
+        };
+        
+        setNotifications(prev => [newNotification, ...prev]);
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить статус заявки",
+        variant: "destructive",
+      });
+    }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusDisplayLabel = (status: string) => {
     switch (status) {
       case 'new': return 'Новая';
       case 'in-progress': return 'В работе';
@@ -153,9 +170,7 @@ const EmployeeDashboard = () => {
     return () => clearInterval(interval);
   }, [toast]);
 
-  const employeeApplications = applications.filter(app => 
-    app.assignedManager === currentEmployee
-  );
+  const employeeApplications = applications;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
@@ -211,19 +226,19 @@ const EmployeeDashboard = () => {
               <div className="space-y-4">
                 <div>
                   <label className="font-medium text-gray-700">Имя:</label>
-                  <p className="text-gray-900">{currentEmployee}</p>
+                  <p className="text-gray-900">{employeeData ? `${employeeData.name} ${employeeData.last_name}` : "Загрузка..."}</p>
                 </div>
                 <div>
                   <label className="font-medium text-gray-700">Email:</label>
-                  <p className="text-gray-900">alexey@company.com</p>
+                  <p className="text-gray-900">{employeeData?.email || "Загрузка..."}</p>
                 </div>
                 <div>
                   <label className="font-medium text-gray-700">Специализация:</label>
-                  <p className="text-gray-900">Регистрация бизнеса</p>
+                  <p className="text-gray-900">{employeeData?.services?.[0]?.name || "Не указана"}</p>
                 </div>
                 <div>
                   <label className="font-medium text-gray-700">Активных заявок:</label>
-                  <p className="text-gray-900">{employeeApplications.filter(app => app.status !== 'completed').length}</p>
+                  <p className="text-gray-900">{applications.filter(app => app.status !== 'completed').length}</p>
                 </div>
               </div>
             </div>

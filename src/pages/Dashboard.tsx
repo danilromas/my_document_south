@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
@@ -9,6 +9,7 @@ import {
   MessageCircle, 
   CreditCard
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import Header from '@/components/Header';
 import NewApplicationModal from '@/components/NewApplicationModal';
 import UserProfileCard from '@/components/dashboard/UserProfileCard';
@@ -18,43 +19,69 @@ import ApplicationsList from '@/components/dashboard/ApplicationsList';
 import PersonalDataForm from '@/components/dashboard/PersonalDataForm';
 import ChatSection from '@/components/dashboard/ChatSection';
 import PaymentsSection from '@/components/dashboard/PaymentsSection';
+import { apiClient, Request, User as UserType } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
-  // Mock данные
-  const userInfo = {
-    name: "Иван Петров",
-    email: "ivan.petrov@email.com", 
-    phone: "+7 (999) 123-45-67",
-    tariff: "Бизнес",
-    joinDate: "15 марта 2024"
+  // Загружаем данные пользователя
+  const { data: userData, isLoading: userLoading, error: userError } = useQuery({
+    queryKey: ['user', user?.id],
+    queryFn: () => apiClient.getUser(user?.id || 1),
+    enabled: !!user?.id,
+  });
+
+  // Загружаем заявки пользователя
+  const { data: requests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery({
+    queryKey: ['requests', user?.id],
+    queryFn: () => apiClient.getRequests({ owner_id: user?.id }),
+    enabled: !!user?.id,
+  });
+
+  // Преобразуем данные для отображения
+  const userInfo = userData ? {
+    name: `${userData.name} ${userData.last_name}`,
+    email: userData.email,
+    phone: userData.phone || "Не указан",
+    tariff: userData.tariff?.name || "Не выбран",
+    joinDate: new Date(userData.created_at).toLocaleDateString('ru-RU')
+  } : {
+    name: "Загрузка...",
+    email: "",
+    phone: "",
+    tariff: "",
+    joinDate: ""
   };
 
-  const applications = [
-    {
-      id: 1,
-      type: "Регистрация ИП",
-      status: "completed",
-      date: "2024-03-20",
-      description: "Регистрация индивидуального предпринимателя"
-    },
-    {
-      id: 2,
-      type: "Создание сайта",
-      status: "in-progress",
-      date: "2024-03-22",
-      description: "Разработка корпоративного сайта"
-    },
-    {
-      id: 3,
-      type: "Настройка рекламы",
-      status: "pending",
-      date: "2024-03-25",
-      description: "Настройка контекстной рекламы"
+  const applications = requests?.map(request => ({
+    id: request.id,
+    type: request.service?.name || "Неизвестная услуга",
+    status: getStatusLabel(request.status),
+    date: new Date(request.created_at).toLocaleDateString('ru-RU'),
+    description: `Заявка на услугу: ${request.service?.name || "Неизвестная услуга"}`
+  })) || [];
+
+  function getStatusLabel(status: number): string {
+    switch (status) {
+      case 0: return "pending";
+      case 1: return "in-progress";
+      case 2: return "completed";
+      default: return "unknown";
     }
-  ];
+  }
+
+  const handleRequestCreated = () => {
+    refetchRequests();
+    toast({
+      title: "Заявка создана",
+      description: "Новая заявка добавлена в ваш список",
+    });
+  };
 
 
   return (
@@ -152,7 +179,8 @@ const Dashboard = () => {
       {/* Модальные окна */}
       <NewApplicationModal 
         open={showNewApplicationModal} 
-        onOpenChange={setShowNewApplicationModal} 
+        onOpenChange={setShowNewApplicationModal}
+        onRequestCreated={handleRequestCreated}
       />
     </div>
   );

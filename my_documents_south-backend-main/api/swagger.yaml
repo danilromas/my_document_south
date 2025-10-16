@@ -1,0 +1,1151 @@
+openapi: 3.1.1
+info:
+  title: My Documents South API
+  version: "2"
+
+servers:
+  - url: http://localhost:3000
+    description: local server
+
+paths:
+  /pub/roles:
+    post:
+      tags:
+        - Roles
+      summary: Создание роли
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Возвращает созданный объект
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "422":
+          description: Некорректное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Объект уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /prot/roles:
+    get:
+      tags:
+        - Roles
+      summary: Получение списка ролей
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/Role"
+                  - type: 'null'
+
+  /prot/roles/{id}:
+    get:
+      tags:
+        - Roles
+      summary: Получение роли по Id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int
+            example: 6
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Role"
+        "400":
+          description: Некорректный Id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Объект с переданным Id не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /prot/services:
+    post:
+      tags:
+        - Services
+      summary: Создание сервиса
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        "200":
+          description: Возвращает созданный объект
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "422":
+          description: Некорректное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Объект уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /prot/services/:
+    get:
+      tags:
+        - Services
+      summary: Получение списка сервисов
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/Service"
+                  - type: "null"
+
+  /prot/services/{id}:
+    get:
+      tags:
+        - Services
+      summary: Получение сервиса по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+            format: int
+            example: 6
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          description: Некорректный Id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Объект с переданным Id не найден
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      tags: 
+        - Services
+      summary: Обновление сервиса по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                &ref: '#/components/schemas/Service'
+        '400': 
+          description: Некорректный id
+          content:
+            application/json:
+              schema:
+                &ref: '#/components/schemas/Error'
+        '404':
+          description: Тариф не найден
+          content:
+            application/json:
+              schema:
+                &ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - Services
+      summary: Удаление сервиса по id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int
+                    example: 8
+        '400':
+          description: Неверный id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Сервис не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pub/tariffs:
+    post:
+      summary: Создание тарифа
+      tags: [Tariffs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Созданный тариф
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        "422":
+          description: Некорректное тело запроса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Объект уже существует
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /prot/tariffs/:
+    get:
+      summary: Получение списка тарифов
+      tags: [Tariffs]
+      responses:
+        '200':
+          description: Список тарифов
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Tariff'
+                  - type: "null"
+
+  /prot/tariffs/{id}:
+    get:
+      summary: Получиение тарифа по id
+      tags: [Tariffs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+      responses:
+        '200':
+          description: Тариф найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        '404':
+          description: Тариф не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "400":
+          description: Некорректный id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Обновление тарифа по id
+      tags: [Tariffs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Обновлённый тариф
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tariff'
+        '404':
+          description: Тариф не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "400":
+          description: Некорректный id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Удаление тарифа по id
+      tags: [Tariffs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: int
+      responses:
+        '200':
+          description: Тариф успешно удалён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int
+                    example: 8
+        '400':
+          description: Неверный id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Тариф не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pub/users/signup:
+    post:
+      summary: Регистрация пользователя
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "201":
+          description: Пользователь успешно создан
+        "409":
+          description: Конфликт — пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Некорректный JSON (invalid body)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /prot/users:
+    get:
+      summary: Получить список пользователей
+      tags: [Users]
+      responses:
+        "200":
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  - type: 'null'
+
+  /prot/users/{id}:
+    get:
+      summary: Получить пользователя по ID
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: int
+      responses:
+        "200":
+          description: Найденный пользователь
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "400":
+          description: Некорректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Удалить пользователя по ID
+      tags: [Users]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: int
+      responses:
+        "200":
+          description: Пользователь удалён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: int
+        "400":
+          description: Некорректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Ошибка сервера при удалении
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /pub/employee/signup:
+    post:
+      summary: Регистрация сотрудника
+      tags: [Employee]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Employee'
+      responses:
+        "201":
+          description: Пользователь удачно создан
+        "409":
+          description: Конфликт - пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "422":
+          description: Некорректный JSON (invalid body)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+  /prot/employee:
+    get:
+      summary: Получить список сотрудников
+      tags: [Employee]
+      responses:
+        "200":
+          description: Список пользователей
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: array
+                    items:
+                      $ref: '#/components/schemas/Employee'
+                  - type: 'null'
+
+  /prot/employee/{id}:
+    get:
+      summary: Получить сотрудника по ID
+      tags: [Employee]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: int
+      responses:
+        "200":
+          description: Найденный сотрудник
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        "400":
+          description: Неккоректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Сотрудник не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Удалить сотрудника по ID
+      tags: [Employee]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: int
+      responses:
+        "200":
+          description: Сотрудник удалён
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: int
+        "400":
+          description: Неккоректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Ошибка сервера при удалении
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /prot/employee/{id}/service:
+    post:
+      summary: Добавить услугу (специализацию) сотруднику.
+      tags: [Employee]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 12
+          description: Employee ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                service_id:
+                  type: integer
+                  example: 3
+      responses:
+        '201':
+          description: Service successfully added
+        '400':
+          description: Invalid request (invalid employee id, invalid body, or missing service_id)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "service_id is required"
+        '401':
+          description: Unauthorized (request from non-employee/user)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "unauthorized"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "failed to add service"
+
+  /prot/employee/{id}/service/{service_id}:
+    delete:
+      summary: Удалить услугу (специализацию) у сотрудника.
+      tags: [Employee]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+            format: int64
+            example: 12
+          description: Employee ID
+        - in: path
+          name: service_id
+          required: true
+          schema:
+            type: integer
+            example: 3
+          description: Service ID
+      responses:
+        '200':
+          description: Service successfully removed
+        '400':
+          description: Invalid request (invalid employee id or invalid service id)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "invalid service id"
+        '401':
+          description: Unauthorized (request from non-employee/user)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "unauthorized"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "failed to remove service"
+
+
+  /prot/request:
+    post:
+      summary: Создание заявки
+      tags: [ Request ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+        responses:
+          '201':
+            description: Заявка успешно создана
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Request'
+          '422':
+            description: Некорректное тело запроса (invalid body)
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+          '409':
+            description: Конфликт при создании заявки
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Error'
+    get:
+      summary: Получить список заявок(с различными фильтрами)
+      tags: [ Request ]
+      parameters:
+        - name: owner_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: service_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int16
+        - name: employee_id
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+        - name: desired_at
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Список заявок
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Request'
+        '400':
+          description: Неверные параметры фильтра
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /prot/request/{id}:
+    get:
+      summary: Получить заявку по ID
+      tags: [ Request ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          example: 1
+      responses:
+        '200':
+          description: Заявка найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        '400':
+          description: Некорректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Заявка с таким ID не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Удалить заявку по ID
+      tags: [ Request ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Заявка успешно удалена
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+        '400':
+          description: Некорректный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Ошибка при удалении (например, заявка используется или конфликт)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /prot/request/{id}/employee:
+    patch:
+      summary: Прикрепить/открепить исполнителя от заявки
+      tags: [ Request ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                employee_id:
+                  type: integer
+                  format: int64
+              required:
+                - employee_id
+      responses:
+        '200':
+          description: Сотрудник успешно обновлён
+          content:
+            application/json:
+              schema:
+                &ref: '#/components/schemas/Request'
+        '400':
+          description: Некорректный ID заявки или тело запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "invalid request id"
+        '500':
+          description: Ошибка сервера при обновлении сотрудника
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /prot/request/{id}/status:
+    patch:
+      summary: Изменить статус заявки
+      tags: [ Request ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: integer
+                  format: int32
+              required:
+                - status
+            example:
+              status: 2
+      responses:
+        '200':
+          description: Статус заявки успешно обновлён
+          content:
+            application/json:
+              schema:
+                &ref: '#/components/schemas/Request'
+        '400':
+          description: Некорректный ID заявки или тело запроса
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "invalid request id"
+        '500':
+          description: Ошибка сервера при обновлении статуса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        timestamp:
+          type: string
+          example: 0001-01-01T00:00:01.00001+03:00
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int
+        name:
+          type: string
+        created_at:
+          type: string
+          example: 0001-01-01T00:00:01.00001+03:00
+        updated_at:
+          type: string
+          example: 0001-01-01T00:00:01.00001+03:00
+
+    Service: 
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int
+        name:
+          type: string
+        created_at:
+          type: string
+          example: 0001-01-01T00:00:01.00001+03:00
+        updated_at:
+          type: string
+          example: 0001-01-01T00:00:01.00001+03:00
+
+    Tariff:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Standard
+        created_at:
+          type: string
+          example: 2025-09-01T12:00:00Z
+        updated_at:
+          type: string
+          nullable: true
+          example: 2025-09-03T15:30:00Z
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Иван
+        last_name:
+          type: string
+          example: Иванов
+        middle_name:
+          type: string
+          example: Иванович
+        email:
+          type: string
+          example: ivan@example.com
+        phone:
+          type: string
+          example: "+79998887766"
+        password:
+          type: string
+          example: "Passw0rd"
+        inn:
+          type: string
+          example: "123456789012"
+        snils:
+          type: string
+          example: "12345678901"
+        tariff_id:
+          type: integer
+          example: 1
+        tariff:
+          #я немного не уверен, писать ref или type.на твое усмотрение
+          $ref: '#/components/schemas/Tariff'
+        created_at:
+          type: string
+          example: 2025-09-01T12:00:00Z
+        updated_at:
+          type: string
+          nullable: true
+          example: 2025-09-03T15:30:00Z
+
+    Employee:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Иван
+        last_name:
+          type: string
+          example: Иванов
+        middle_name:
+          type: string
+          example: Иванович
+        email:
+          type: string
+          example: ivan@example.com
+        password:
+          type: string
+          example: "Passw0rd"
+        active:
+          type: boolean
+          example: true
+        role_id:
+          type: integer
+          example: 1
+        role:
+          $ref: '#/components/schemas/Role'
+        services:
+          $ref: '#/components/schemas/Service'
+        created_at:
+          type: string
+          example: 2025-09-01T12:00:00Z
+        updated_at:
+          type: string
+          nullable: true
+          example: 2025-09-03T15:30:00Z
+    Request:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        owner_id:
+          type: integer
+          format: int64
+          description: "ID пользователя-владельца (user)"
+          example: 77
+        user:
+          $ref: '#/components/schemas/User'
+        service_id:
+          type: integer
+          format: int64
+          example: 5
+        service:
+          $ref: '#/components/schemas/Service'
+        employee_id:
+          type: integer
+          format: int64
+          example: 11
+        employee:
+          $ref: '#/components/schemas/Employee'
+        status:
+          type: integer
+          format: int16
+          example: 2
+        desired_at:
+          type: string
+          format: date-time
+          example: "2025-09-12T10:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-09-01T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-09-05T14:10:00Z"
+        closed_at:
+          type: string
+          format: date-time
+          example: "2025-09-05T14:10:00Z"
